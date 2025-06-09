@@ -1,4 +1,0 @@
-openai
-tweepy
-requests
-subprocess

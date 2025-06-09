@@ -2,7 +2,7 @@ name: Twitter Reply Bot
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,4 +23,4 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run Twitter Reply Bot
-        run: python twitter_bot/reply_mentions.py
+        run: python src/twitter_bot/reply_mentions.py

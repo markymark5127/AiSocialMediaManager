@@ -1,5 +1,4 @@
 openai
 tweepy
 requests
-subprocess
 gTTS
