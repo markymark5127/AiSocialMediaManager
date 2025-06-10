@@ -6,8 +6,9 @@ This repository contains a lightweight collection of scripts that automate basic
 
 * **Twitter/X Auto‑Responder** – replies to recent mentions every six hours using OpenAI to craft a helpful response.
 * **AI Video Generator** – creates a short vertical video with voiceover and captions that can be posted to Reels/TikTok.
-* **Instagram Comment Reply (stub)** – demonstrates how a reply endpoint could be implemented using the Meta Graph API.
+* **Instagram & Facebook Replies** – example code for responding to comments via the Meta Graph API.
 * **Multi‑Platform Scheduler** – generates AI posts and schedules them three times per day for Twitter, Facebook, Instagram, and TikTok.
+* **Topic & Image Sources** – place text prompts in `topics.txt` and seed images in the `images/` folder. One topic and image are selected at random for each post.
 
 The automation is designed to run on free tiers such as GitHub Actions.
 
@@ -20,13 +21,15 @@ The automation is designed to run on free tiers such as GitHub Actions.
 2. Set the following environment variables for the APIs you intend to use:
    - `OPENAI_API_KEY`
    - `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`
-   - `META_ACCESS_TOKEN`, `IG_BUSINESS_ID` (optional for Instagram)
-3. Run the individual scripts from the `src` directory.  For example:
+ - `META_ACCESS_TOKEN`, `IG_BUSINESS_ID` (optional for Instagram)
+3. Edit `topics.txt` with lines of text describing the content you want posted.
+   Add seed images to the `images/` directory to influence the generated art.
+4. Run the individual scripts from the `src` directory.  For example:
    ```bash
    python src/twitter_bot/reply_mentions.py
    ```
 
-The GitHub Actions workflow in `.github/workflows/reply_bot.yml` is configured to run the Twitter bot every six hours.
+GitHub Actions workflows in `.github/workflows/` run the bots on a schedule. `social_media.yml` posts content daily and handles replies.
 
 ## Repository Layout
 
@@ -35,6 +38,7 @@ src/
   twitter_bot/reply_mentions.py   # Twitter/X reply automation
   video_bot/generate_video.py     # AI‑generated vertical video
   instagram_bot/instagram_replies.py  # Meta API scaffold
+  facebook_bot/reply_comments.py   # Facebook comment replies
   post_scheduler.py               # Randomized multi-platform posting
 ```
 

@@ -2,11 +2,13 @@
 import openai
 import subprocess
 import os
+import random
 from gtts import gTTS
 from datetime import datetime
 
 # Environment variable for OpenAI API
 openai.api_key = os.getenv("OPENAI_API_KEY")
+IMAGE_DIR = os.getenv("IMAGE_DIR", "images")
 
 def generate_script():
     prompt = "Write a short 15-second video script promoting a free AI recipe app that generates meal ideas based on fridge photos. Make it friendly, use emojis, and end with a call to action."
@@ -15,6 +17,13 @@ def generate_script():
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content.strip()
+
+
+def get_random_background() -> str:
+    if not os.path.isdir(IMAGE_DIR):
+        return "background.jpg"
+    imgs = [os.path.join(IMAGE_DIR, f) for f in os.listdir(IMAGE_DIR) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    return random.choice(imgs) if imgs else "background.jpg"
 
 def save_text_as_audio(text, audio_path="voiceover.mp3"):
     tts = gTTS(text)
@@ -56,4 +65,5 @@ if __name__ == "__main__":
     script = generate_script()
     print("📜 Script:\n", script)
     save_text_as_audio(script)
-    generate_video(script)
+    bg = get_random_background()
+    generate_video(script, image_path=bg)

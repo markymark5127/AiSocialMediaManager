@@ -8,6 +8,8 @@ import tweepy
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+TOPIC_FILE = os.getenv("TOPIC_FILE", "topics.txt")
+IMAGE_DIR = os.getenv("IMAGE_DIR", "images")
 
 # Twitter authentication
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
@@ -43,13 +45,35 @@ def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 
     return [start + timedelta(seconds=random.randint(0, seconds_range)) for _ in range(count)]
 
 
-def generate_ai_post(style: str, platform: str) -> str:
-    prompts = {
-        "funny": "Write a short, witty social media post about our AI app.",
-        "serious": "Write a professional announcement about a new feature in our AI app.",
-        "update": "Write a brief update on today's improvements to our AI app.",
-    }
-    prompt = prompts.get(style, prompts["update"])
+def get_random_topic() -> str:
+    if not os.path.exists(TOPIC_FILE):
+        return "our AI app"
+    with open(TOPIC_FILE, "r") as f:
+        topics = [line.strip() for line in f if line.strip()]
+    return random.choice(topics) if topics else "our AI app"
+
+
+def get_seed_image() -> str | None:
+    if not os.path.isdir(IMAGE_DIR):
+        return None
+    imgs = [os.path.join(IMAGE_DIR, f) for f in os.listdir(IMAGE_DIR) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    return random.choice(imgs) if imgs else None
+
+
+def generate_image(seed_image: str | None) -> str | None:
+    if not seed_image:
+        return None
+    try:
+        with open(seed_image, "rb") as img:
+            resp = openai.Image.create_variation(image=img, n=1, size="1024x1024")
+        return resp["data"][0]["url"]
+    except Exception as exc:
+        print("Image generation failed:", exc)
+        return None
+
+
+def generate_ai_post(topic: str, style: str, platform: str) -> str:
+    prompt = f"Write a {style} social media post about {topic}."
     if platform == "twitter":
         prompt += " Limit to 280 characters."
     response = openai.ChatCompletion.create(
@@ -59,27 +83,42 @@ def generate_ai_post(style: str, platform: str) -> str:
     return response["choices"][0]["message"]["content"].strip()
 
 
-def post_to_twitter(message: str):
+def post_to_twitter(message: str, image_path: str | None = None):
     if not twitter_api:
         print("Twitter credentials not configured.")
         return
-    twitter_api.update_status(status=message)
+    if image_path:
+        media = twitter_api.media_upload(image_path)
+        twitter_api.update_status(status=message, media_ids=[media.media_id])
+    else:
+        twitter_api.update_status(status=message)
 
 
-def post_to_facebook(message: str):
+def post_to_facebook(message: str, image_url: str | None = None, image_path: str | None = None):
     if not (META_ACCESS_TOKEN and FB_PAGE_ID):
         print("Facebook credentials not configured.")
         return
-    url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/feed"
-    requests.post(url, data={"message": message, "access_token": META_ACCESS_TOKEN})
+    if image_path:
+        url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/photos"
+        with open(image_path, "rb") as img:
+            requests.post(url, data={"caption": message, "access_token": META_ACCESS_TOKEN}, files={"source": img})
+    elif image_url:
+        url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/photos"
+        requests.post(url, data={"caption": message, "url": image_url, "access_token": META_ACCESS_TOKEN})
+    else:
+        url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/feed"
+        requests.post(url, data={"message": message, "access_token": META_ACCESS_TOKEN})
 
 
-def post_to_instagram(message: str):
+def post_to_instagram(message: str, image_url: str | None = None):
     if not (META_ACCESS_TOKEN and IG_USER_ID):
         print("Instagram credentials not configured.")
         return
     create_url = f"https://graph.facebook.com/v17.0/{IG_USER_ID}/media"
-    resp = requests.post(create_url, data={"caption": message, "access_token": META_ACCESS_TOKEN})
+    payload = {"caption": message, "access_token": META_ACCESS_TOKEN}
+    if image_url:
+        payload["image_url"] = image_url
+    resp = requests.post(create_url, data=payload)
     creation_id = resp.json().get("id")
     if creation_id:
         publish_url = f"https://graph.facebook.com/v17.0/{IG_USER_ID}/media_publish"
@@ -87,22 +126,46 @@ def post_to_instagram(message: str):
 
 
 def post_to_tiktok(message: str):
-    print("TikTok posting not implemented. Message:", message)
+    try:
+        from video_bot.generate_video import generate_script, save_text_as_audio, generate_video, get_random_background
+        from video_bot.tiktok_video_bot import post_video_to_tiktok
+    except Exception as exc:
+        print("TikTok modules not available:", exc)
+        return
+    script = generate_script()
+    save_text_as_audio(script)
+    bg = get_random_background()
+    generate_video(script, image_path=bg)
+    post_video_to_tiktok("output_reel.mp4", message)
 
 
 def post_content(platform: str):
     style = random.choice(["funny", "serious", "update"])
-    content = generate_ai_post(style, platform)
+    topic = get_random_topic()
+    content = generate_ai_post(topic, style, platform)
+    seed_image = get_seed_image() if platform in {"facebook", "instagram", "twitter"} else None
+    image_url = generate_image(seed_image) if seed_image else None
 
     if platform == "twitter":
-        post_to_twitter(content)
+        img_path = None
+        if image_url and image_url.startswith("http"):
+            try:
+                img_path = os.path.join(IMAGE_DIR, "tw_dl.jpg")
+                r = requests.get(image_url)
+                with open(img_path, "wb") as f:
+                    f.write(r.content)
+            except Exception:
+                img_path = None
+        post_to_twitter(content, img_path)
     elif platform == "facebook":
-        post_to_facebook(content)
+        post_to_facebook(content, image_url=image_url)
     elif platform == "instagram":
-        post_to_instagram(content)
+        post_to_instagram(content, image_url=image_url)
     elif platform == "tiktok":
         post_to_tiktok(content)
-    print(f"Posted on {platform} at {datetime.now().isoformat()} with style: {style}")
+    print(
+        f"Posted on {platform} at {datetime.now().isoformat()} with style: {style} topic: {topic}"
+    )
 
 
 def schedule_daily_posts():
