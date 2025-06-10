@@ -1,6 +1,9 @@
 import os
 import random
+import smtplib
+import traceback
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 
 import openai
 import requests
@@ -33,6 +36,30 @@ META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
 FB_PAGE_ID = os.getenv("FB_PAGE_ID")
 IG_USER_ID = os.getenv("IG_USER_ID") or os.getenv("IG_BUSINESS_ID")
 
+# Email settings for error alerts
+ERROR_EMAIL = os.getenv("ERROR_EMAIL")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 25))
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+
+def send_error_email(subject: str, body: str):
+    if not ERROR_EMAIL:
+        return
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_USER or ERROR_EMAIL
+    msg["To"] = ERROR_EMAIL
+    try:
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            if EMAIL_USER and EMAIL_PASSWORD:
+                server.starttls()
+                server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.sendmail(msg["From"], [ERROR_EMAIL], msg.as_string())
+    except Exception as exc:
+        print("Failed to send error email:", exc)
+
 
 def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 3):
     """Return a list of datetime objects for today between start_hour and end_hour."""
@@ -42,7 +69,11 @@ def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 
     if end <= start:
         end += timedelta(days=1)
     seconds_range = int((end - start).total_seconds())
-    return [start + timedelta(seconds=random.randint(0, seconds_range)) for _ in range(count)]
+    if count > seconds_range:
+        count = seconds_range
+    random_seconds = random.sample(range(seconds_range), count)
+    times = [start + timedelta(seconds=s) for s in random_seconds]
+    return sorted(times)
 
 
 def get_random_topic() -> str:
@@ -140,32 +171,37 @@ def post_to_tiktok(message: str):
 
 
 def post_content(platform: str):
-    style = random.choice(["funny", "serious", "update"])
-    topic = get_random_topic()
-    content = generate_ai_post(topic, style, platform)
-    seed_image = get_seed_image() if platform in {"facebook", "instagram", "twitter"} else None
-    image_url = generate_image(seed_image) if seed_image else None
+    try:
+        style = random.choice(["funny", "serious", "update"])
+        topic = get_random_topic()
+        content = generate_ai_post(topic, style, platform)
+        seed_image = get_seed_image() if platform in {"facebook", "instagram", "twitter"} else None
+        image_url = generate_image(seed_image) if seed_image else None
 
-    if platform == "twitter":
-        img_path = None
-        if image_url and image_url.startswith("http"):
-            try:
-                img_path = os.path.join(IMAGE_DIR, "tw_dl.jpg")
-                r = requests.get(image_url)
-                with open(img_path, "wb") as f:
-                    f.write(r.content)
-            except Exception:
-                img_path = None
-        post_to_twitter(content, img_path)
-    elif platform == "facebook":
-        post_to_facebook(content, image_url=image_url)
-    elif platform == "instagram":
-        post_to_instagram(content, image_url=image_url)
-    elif platform == "tiktok":
-        post_to_tiktok(content)
-    print(
-        f"Posted on {platform} at {datetime.now().isoformat()} with style: {style} topic: {topic}"
-    )
+        if platform == "twitter":
+            img_path = None
+            if image_url and image_url.startswith("http"):
+                try:
+                    img_path = os.path.join(IMAGE_DIR, "tw_dl.jpg")
+                    r = requests.get(image_url)
+                    with open(img_path, "wb") as f:
+                        f.write(r.content)
+                except Exception:
+                    img_path = None
+            post_to_twitter(content, img_path)
+        elif platform == "facebook":
+            post_to_facebook(content, image_url=image_url)
+        elif platform == "instagram":
+            post_to_instagram(content, image_url=image_url)
+        elif platform == "tiktok":
+            post_to_tiktok(content)
+        print(
+            f"Posted on {platform} at {datetime.now().isoformat()} with style: {style} topic: {topic}"
+        )
+    except Exception as exc:
+        err = traceback.format_exc()
+        send_error_email(f"Post to {platform} failed", err)
+        print(f"Failed to post on {platform}:", exc)
 
 
 def schedule_daily_posts():
@@ -175,7 +211,12 @@ def schedule_daily_posts():
         for run_time in generate_random_times():
             scheduler.add_job(post_content, "date", run_date=run_time, args=[platform])
             print(f"Scheduled {platform} post for {run_time}")
-    scheduler.start()
+    try:
+        scheduler.start()
+    except Exception:
+        err = traceback.format_exc()
+        send_error_email("Scheduler failed", err)
+        print("Scheduler failed:", err)
 
 
 if __name__ == "__main__":
