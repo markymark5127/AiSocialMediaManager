@@ -1,8 +1,14 @@
 
 import os
+import sys
 import tweepy
 import openai
 import time
+
+# Allow running this script directly via `python src/twitter_bot/reply_mentions.py`
+# by adding the repository root to `sys.path` so that `src` can be imported.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.utils import is_spam, generate_context_reply
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
