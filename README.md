@@ -7,6 +7,9 @@ This repository contains a lightweight collection of scripts that automate basic
 * **Twitter/X Auto‑Responder** – replies to recent mentions every six hours using OpenAI to craft a helpful response.
 * **AI Video Generator** – creates a short vertical video with voiceover and captions that can be posted to Reels/TikTok.
 * **Instagram & Facebook Replies** – example code for responding to comments via the Meta Graph API.
+* **Context‑Aware Auto‑Replies** – comment and DM responses include FAQ links and ignore spam keywords.
+* **Follow/Unfollow & Engagement Bot** – automatically follow engagers, like follower posts, and unfollow nonfollowers after a set period.
+* **Meme + Video Generator** – turns trending AI meme formats into short captioned videos.
 * **Multi‑Platform Scheduler** – generates AI posts and schedules them three times per day for Twitter, Facebook, Instagram, and TikTok.
 * **Topic & Image Sources** – place text prompts in `topics.txt` and seed images in the `images/` folder. One topic and image are selected at random for each post.
 
@@ -40,6 +43,8 @@ src/
   instagram_bot/instagram_replies.py  # Meta API scaffold
   facebook_bot/reply_comments.py   # Facebook comment replies
   post_scheduler.py               # Randomized multi-platform posting
+  engagement_bot.py               # Follow/unfollow automation
+  meme_generator.py               # Trending meme video creator
 ```
 
 The repository retains the MIT license.
