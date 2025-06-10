@@ -7,6 +7,7 @@ This repository contains a lightweight collection of scripts that automate basic
 * **Twitter/X Auto‑Responder** – replies to recent mentions every six hours using OpenAI to craft a helpful response.
 * **AI Video Generator** – creates a short vertical video with voiceover and captions that can be posted to Reels/TikTok.
 * **Instagram Comment Reply (stub)** – demonstrates how a reply endpoint could be implemented using the Meta Graph API.
+* **Multi‑Platform Scheduler** – generates AI posts and schedules them three times per day for Twitter, Facebook, Instagram, and TikTok.
 
 The automation is designed to run on free tiers such as GitHub Actions.
 
@@ -34,6 +35,7 @@ src/
   twitter_bot/reply_mentions.py   # Twitter/X reply automation
   video_bot/generate_video.py     # AI‑generated vertical video
   instagram_bot/instagram_replies.py  # Meta API scaffold
+  post_scheduler.py               # Randomized multi-platform posting
 ```
 
 The repository retains the MIT license.
