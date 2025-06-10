@@ -1,6 +1,7 @@
 import os
 import requests
 import openai
+from src.utils import is_spam, generate_context_reply
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
@@ -8,9 +9,8 @@ PAGE_ID = os.getenv("FB_PAGE_ID")
 
 
 def generate_reply(text: str) -> str:
-    prompt = f"Reply to this Facebook comment in a friendly tone: {text}"
-    resp = openai.ChatCompletion.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-    return resp["choices"][0]["message"]["content"].strip()
+    """Generate a context-aware reply with CTA."""
+    return generate_context_reply(text)
 
 
 def list_recent_comments():
@@ -31,7 +31,10 @@ def reply_to_comment(comment_id: str, message: str):
 
 def auto_reply():
     for comment in list_recent_comments():
-        reply = generate_reply(comment.get("message", ""))
+        message = comment.get("message", "")
+        if is_spam(message):
+            continue
+        reply = generate_reply(message)
         reply_to_comment(comment["id"], reply)
         print("Replied to comment", comment["id"])
 

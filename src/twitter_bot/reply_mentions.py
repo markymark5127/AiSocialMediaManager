@@ -3,6 +3,7 @@ import os
 import tweepy
 import openai
 import time
+from src.utils import is_spam, generate_context_reply
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -17,18 +18,16 @@ api = tweepy.API(auth)
 def get_mentions(since_id):
     return api.mentions_timeline(since_id=since_id, tweet_mode='extended')
 
-def generate_reply(text):
-    prompt = f"Reply to this tweet in a friendly, helpful tone: {text}"
-    res = openai.ChatCompletion.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return res['choices'][0]['message']['content'].strip()
+def generate_reply(text: str) -> str:
+    """Generate a context-aware reply with CTA."""
+    return generate_context_reply(text)
 
 def reply_to_mentions():
     since_id = int(open("since_id.txt", "r").read()) if os.path.exists("since_id.txt") else 1
     mentions = get_mentions(since_id)
     for mention in reversed(mentions):
+        if is_spam(mention.full_text):
+            continue
         print(f"Replying to @{mention.user.screen_name}")
         reply_text = generate_reply(mention.full_text)
         api.update_status(
