@@ -1,13 +1,8 @@
-
 import os
 import sys
 import tweepy
 import openai
-import time
 
-# Allow running this script directly via `python src/twitter_bot/reply_mentions.py`
-# by adding the repository root to `sys.path` so that `src` can be imported.
-# Add the repository root to ``sys.path`` so imports work when executed directly
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(ROOT_DIR)
 
@@ -24,25 +19,53 @@ auth = tweepy.OAuth1UserHandler(
 api = tweepy.API(auth)
 
 def get_mentions(since_id):
-    return api.mentions_timeline(since_id=since_id, tweet_mode='extended')
+    try:
+        return api.mentions_timeline(since_id=since_id, tweet_mode='extended')
+    except tweepy.TweepyException as e:
+        print(f"❌ Error fetching mentions: {e}")
+        return []
 
 def generate_reply(text: str) -> str:
-    """Generate a context-aware reply with CTA."""
     return generate_context_reply(text)
 
 def reply_to_mentions():
-    since_id = int(open("since_id.txt", "r").read()) if os.path.exists("since_id.txt") else 1
+    # ✅ Safe load of since_id
+    try:
+        with open("since_id.txt", "r") as f:
+            since_id = int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        since_id = 1
+
+    # ✅ Check auth explicitly
+    try:
+        user = api.verify_credentials()
+        print(f"✅ Authenticated as @{user.screen_name}")
+    except Exception as e:
+        print(f"❌ Failed to authenticate: {e}")
+        return
+
     mentions = get_mentions(since_id)
+    print(f"📥 Found {len(mentions)} mentions")
+
     for mention in reversed(mentions):
         if is_spam(mention.full_text):
+            print(f"🚫 Skipping spam from @{mention.user.screen_name}")
             continue
-        print(f"Replying to @{mention.user.screen_name}")
+
+        print(f"💬 Replying to @{mention.user.screen_name}: {mention.full_text}")
         reply_text = generate_reply(mention.full_text)
-        api.update_status(
-            status=f"@{mention.user.screen_name} {reply_text}",
-            in_reply_to_status_id=mention.id
-        )
+        try:
+            api.update_status(
+                status=f"@{mention.user.screen_name} {reply_text}",
+                in_reply_to_status_id=mention.id
+            )
+            print(f"✅ Replied to @{mention.user.screen_name}")
+        except tweepy.TweepyException as e:
+            print(f"❌ Failed to reply: {e}")
+
         since_id = max(since_id, mention.id)
+
+    # ✅ Always write latest since_id
     with open("since_id.txt", "w") as f:
         f.write(str(since_id))
 
