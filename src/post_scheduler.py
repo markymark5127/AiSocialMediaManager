@@ -13,6 +13,13 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 openai.api_key = os.getenv("OPENAI_API_KEY")
 TOPIC_FILE = os.getenv("TOPIC_FILE", "topics.txt")
 IMAGE_DIR = os.getenv("IMAGE_DIR", "images")
+LOG_FILE = os.getenv("LOG_FILE", "log.txt")
+
+
+def log(message: str):
+    """Append a timestamped message to LOG_FILE."""
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{datetime.now().isoformat()} {message}\n")
 
 # Twitter authentication
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
@@ -35,6 +42,7 @@ else:
 META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
 FB_PAGE_ID = os.getenv("FB_PAGE_ID")
 IG_USER_ID = os.getenv("IG_USER_ID") or os.getenv("IG_BUSINESS_ID")
+TIKTOK_ACCESS_TOKEN = os.getenv("TIKTOK_ACCESS_TOKEN")
 
 # Email settings for error alerts
 ERROR_EMAIL = os.getenv("ERROR_EMAIL")
@@ -59,6 +67,56 @@ def send_error_email(subject: str, body: str):
             server.sendmail(msg["From"], [ERROR_EMAIL], msg.as_string())
     except Exception as exc:
         print("Failed to send error email:", exc)
+
+
+def twitter_authenticated() -> bool:
+    if not twitter_api:
+        return False
+    try:
+        twitter_api.verify_credentials()
+        return True
+    except Exception as exc:
+        print("Twitter auth failed:", exc)
+        return False
+
+
+def facebook_authenticated() -> bool:
+    if not (META_ACCESS_TOKEN and FB_PAGE_ID):
+        return False
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/v17.0/me?access_token={META_ACCESS_TOKEN}"
+        )
+        return resp.status_code == 200
+    except Exception as exc:
+        print("Facebook auth failed:", exc)
+        return False
+
+
+def instagram_authenticated() -> bool:
+    if not (META_ACCESS_TOKEN and IG_USER_ID):
+        return False
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/v17.0/{IG_USER_ID}?fields=id&access_token={META_ACCESS_TOKEN}"
+        )
+        return resp.status_code == 200
+    except Exception as exc:
+        print("Instagram auth failed:", exc)
+        return False
+
+
+def tiktok_authenticated() -> bool:
+    if not TIKTOK_ACCESS_TOKEN:
+        return False
+    try:
+        from video_bot.tiktok_video_bot import query_creator_info
+
+        query_creator_info(TIKTOK_ACCESS_TOKEN)
+        return True
+    except Exception as exc:
+        print("TikTok auth failed:", exc)
+        return False
 
 
 def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 3):
@@ -115,19 +173,18 @@ def generate_ai_post(topic: str, style: str, platform: str) -> str:
 
 
 def post_to_twitter(message: str, image_path: str | None = None):
-    if not twitter_api:
-        print("Twitter credentials not configured.")
+    if not twitter_authenticated():
         return
     if image_path:
         media = twitter_api.media_upload(image_path)
         twitter_api.update_status(status=message, media_ids=[media.media_id])
     else:
         twitter_api.update_status(status=message)
+    log("Posted to twitter")
 
 
 def post_to_facebook(message: str, image_url: str | None = None, image_path: str | None = None):
-    if not (META_ACCESS_TOKEN and FB_PAGE_ID):
-        print("Facebook credentials not configured.")
+    if not facebook_authenticated():
         return
     if image_path:
         url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/photos"
@@ -139,11 +196,11 @@ def post_to_facebook(message: str, image_url: str | None = None, image_path: str
     else:
         url = f"https://graph.facebook.com/v17.0/{FB_PAGE_ID}/feed"
         requests.post(url, data={"message": message, "access_token": META_ACCESS_TOKEN})
+    log("Posted to facebook")
 
 
 def post_to_instagram(message: str, image_url: str | None = None):
-    if not (META_ACCESS_TOKEN and IG_USER_ID):
-        print("Instagram credentials not configured.")
+    if not instagram_authenticated():
         return
     create_url = f"https://graph.facebook.com/v17.0/{IG_USER_ID}/media"
     payload = {"caption": message, "access_token": META_ACCESS_TOKEN}
@@ -154,9 +211,12 @@ def post_to_instagram(message: str, image_url: str | None = None):
     if creation_id:
         publish_url = f"https://graph.facebook.com/v17.0/{IG_USER_ID}/media_publish"
         requests.post(publish_url, data={"creation_id": creation_id, "access_token": META_ACCESS_TOKEN})
+    log("Posted to instagram")
 
 
 def post_to_tiktok(message: str):
+    if not tiktok_authenticated():
+        return
     try:
         from video_bot.generate_video import generate_script, save_text_as_audio, generate_video, get_random_background
         from video_bot.tiktok_video_bot import post_video_to_tiktok
@@ -168,10 +228,23 @@ def post_to_tiktok(message: str):
     bg = get_random_background()
     generate_video(script, image_path=bg)
     post_video_to_tiktok("output_reel.mp4", message)
+    log("Posted to tiktok")
 
 
 def post_content(platform: str):
     try:
+        if platform == "twitter" and not twitter_authenticated():
+            log("Skipped twitter due to auth failure")
+            return
+        if platform == "facebook" and not facebook_authenticated():
+            log("Skipped facebook due to auth failure")
+            return
+        if platform == "instagram" and not instagram_authenticated():
+            log("Skipped instagram due to auth failure")
+            return
+        if platform == "tiktok" and not tiktok_authenticated():
+            log("Skipped tiktok due to auth failure")
+            return
         style = random.choice(["funny", "serious", "update"])
         topic = get_random_topic()
         content = generate_ai_post(topic, style, platform)
