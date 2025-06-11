@@ -1,14 +1,17 @@
 import os
 import random
-import tweepy
-import openai
+from pathlib import Path
 from datetime import datetime
+
+import requests
+import tweepy
+from openai import OpenAI
 
 TOPIC_FILE = os.getenv("TOPIC_FILE", "topics.txt")
 IMAGE_DIR = os.getenv("IMAGE_DIR", "images")
 STYLE_STATE_FILE = os.getenv("STYLE_STATE_FILE", "tweet_style.txt")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 auth = tweepy.OAuth1UserHandler(
     os.getenv("TWITTER_API_KEY"),
@@ -56,20 +59,23 @@ def generate_tweet(topic: str, style: str) -> str:
         f"Write a {style} tweet about {topic}. "
         "Include a couple relevant hashtags at the end."
     )
-    res = openai.ChatCompletion.create(
+    res = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
     )
-    return res["choices"][0]["message"]["content"].strip()
+    return res.choices[0].message.content.strip()
 
 
 def generate_image(seed_image: str | None, topic: str) -> str | None:
     if not seed_image:
         return None
     try:
-        with open(seed_image, "rb") as img:
-            resp = openai.Image.create_variation(image=img, n=1, size="1024x1024")
-        return resp["data"][0]["url"]
+        response = client.images.create_variation(
+            image=Path(seed_image),
+            n=1,
+            size="1024x1024"
+        )
+        return response.data[0].url
     except Exception as exc:
         print("Image generation failed:", exc)
         return None
@@ -96,8 +102,6 @@ def main():
     download_path = None
     if generated_url and generated_url.startswith("http"):
         try:
-            import requests
-
             r = requests.get(generated_url)
             download_path = os.path.join(IMAGE_DIR, "tweet_temp.jpg")
             with open(download_path, "wb") as f:
