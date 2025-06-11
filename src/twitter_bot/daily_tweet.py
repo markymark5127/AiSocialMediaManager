@@ -82,38 +82,44 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
 
 
 def post_tweet(text: str, image_path: str | None = None):
+    """Post a tweet optionally with an image.
+
+    Ensures the media exists and isn't zero bytes before uploading.
+    """
     media_id = None
     if image_path and os.path.exists(image_path):
         try:
+            # Ensure file is not zero bytes
             if os.path.getsize(image_path) == 0:
                 raise Exception("Image file is empty.")
+
             media = twitter_api.media_upload(image_path)
             media_id = media.media_id
         except Exception as exc:
             print("Failed to upload media:", exc)
-            image_path = None
+            image_path = None  # Don't pass invalid media
     twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
 
 
 def main():
     style = _next_style()
     topic = _get_random_topic()
-    seed_image = _get_random_image()
+    # seed_image = _get_random_image()
     tweet = generate_tweet(topic, style)
-    generated_url = generate_image(seed_image, topic)
+    # generated_url = generate_image(seed_image, topic)
 
-    download_path = None
-    if generated_url and generated_url.startswith("http"):
-        try:
-            r = requests.get(generated_url)
-            download_path = os.path.join(IMAGE_DIR, "tweet_temp.jpg")
-            with open(download_path, "wb") as f:
-                f.write(r.content)
-        except Exception as exc:
-            print("Failed to download generated image:", exc)
-            download_path = None
+    # download_path = None
+    # if generated_url and generated_url.startswith("http"):
+    #     try:
+    #         r = requests.get(generated_url)
+    #         download_path = os.path.join(IMAGE_DIR, "tweet_temp.jpg")
+    #         with open(download_path, "wb") as f:
+    #             f.write(r.content)
+    #     except Exception as exc:
+    #         print("Failed to download generated image:", exc)
+    #         download_path = None
 
-    post_tweet(tweet, download_path)
+    post_tweet(tweet)
     print(f"[{datetime.now().isoformat()}] Tweeted with style {style} about '{topic}'")
 
 
