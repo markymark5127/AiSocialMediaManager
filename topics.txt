@@ -1,7 +1,6 @@
 Please generate a post about the Applications I have created "RecipeSnap AI" or "StyleSync AI"
 The link to "RecipeSnap AI" on the iOS App Store is: "https://apps.apple.com/us/app/recipesnap-ai/id6746269787"
-The link to "StyleSync AI" on the iOS App Store is: 
-"https://apps.apple.com/us/app/stylesync-ai/id6745907418"
+The link to "StyleSync AI" on the iOS App Store is: "https://apps.apple.com/us/app/stylesync-ai/id6745907418"
 
 🍳 RecipeSnap AI – Smart Recipes from Your Fridge
 Turn what you have into what you crave.
