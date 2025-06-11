@@ -119,19 +119,42 @@ def tiktok_authenticated() -> bool:
         return False
 
 
-def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 3):
-    """Return a list of datetime objects for today between start_hour and end_hour."""
-    now = datetime.now()
-    start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
-    end = now.replace(hour=end_hour, minute=0, second=0, microsecond=0)
-    if end <= start:
-        end += timedelta(days=1)
+def _random_times_between(start: datetime, end: datetime, count: int) -> list[datetime]:
+    """Helper to pick `count` random datetimes between start and end."""
     seconds_range = int((end - start).total_seconds())
     if count > seconds_range:
         count = seconds_range
-    random_seconds = random.sample(range(seconds_range), count)
-    times = [start + timedelta(seconds=s) for s in random_seconds]
-    return sorted(times)
+    seconds = random.sample(range(seconds_range), count)
+    return [start + timedelta(seconds=s) for s in seconds]
+
+
+def generate_random_times(start_hour: int = 8, end_hour: int = 22, count: int = 3) -> list[datetime]:
+    """Return random future times today or tomorrow between start_hour and end_hour."""
+    now = datetime.now()
+
+    start_today = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+    end_today = now.replace(hour=end_hour, minute=0, second=0, microsecond=0)
+    if end_today <= start_today:
+        end_today += timedelta(days=1)
+
+    times = []
+
+    # Times remaining today that are still in the future
+    if now < end_today:
+        start = max(start_today, now + timedelta(minutes=1))
+        times.extend(t for t in _random_times_between(start, end_today, count) if t > now)
+
+    # If not enough times left today, schedule the rest for tomorrow
+    if len(times) < count:
+        tomorrow = now + timedelta(days=1)
+        start_tomorrow = tomorrow.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        end_tomorrow = tomorrow.replace(hour=end_hour, minute=0, second=0, microsecond=0)
+        if end_tomorrow <= start_tomorrow:
+            end_tomorrow += timedelta(days=1)
+        remaining = count - len(times)
+        times.extend(_random_times_between(start_tomorrow, end_tomorrow, remaining))
+
+    return sorted(times[:count])
 
 
 def get_random_topic() -> str:
