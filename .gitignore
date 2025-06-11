@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+tweet_style.txt
+images/tweet_temp.jpg
