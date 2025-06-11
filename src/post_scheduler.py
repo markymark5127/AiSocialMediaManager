@@ -8,7 +8,6 @@ from email.mime.text import MIMEText
 import openai
 import requests
 import tweepy
-from apscheduler.schedulers.blocking import BlockingScheduler
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 TOPIC_FILE = os.getenv("TOPIC_FILE", "topics.txt")
@@ -300,20 +299,12 @@ def post_content(platform: str):
         print(f"Failed to post on {platform}:", exc)
 
 
-def schedule_daily_posts():
-    scheduler = BlockingScheduler()
+def post_to_all_platforms() -> None:
+    """Immediately post content to all available platforms."""
     platforms = ["twitter", "facebook", "instagram", "tiktok"]
     for platform in platforms:
-        for run_time in generate_random_times():
-            scheduler.add_job(post_content, "date", run_date=run_time, args=[platform])
-            print(f"Scheduled {platform} post for {run_time}")
-    try:
-        scheduler.start()
-    except Exception:
-        err = traceback.format_exc()
-        send_error_email("Scheduler failed", err)
-        print("Scheduler failed:", err)
+        post_content(platform)
 
 
 if __name__ == "__main__":
-    schedule_daily_posts()
+    post_to_all_platforms()

@@ -10,7 +10,7 @@ This repository contains a lightweight collection of scripts that automate basic
 * **Context‑Aware Auto‑Replies** – comment and DM responses include FAQ links and ignore spam keywords.
 * **Follow/Unfollow & Engagement Bot** – automatically follow engagers, like follower posts, and unfollow nonfollowers after a set period.
 * **Meme + Video Generator** – turns trending AI meme formats into short captioned videos.
-* **Multi‑Platform Scheduler** – generates AI posts and schedules them three times per day for Twitter, Facebook, Instagram, and TikTok.
+* **Multi‑Platform Scheduler** – generates AI posts for Twitter, Facebook, Instagram, and TikTok when triggered.
 * **Topic & Image Sources** – place text prompts in `topics.txt` and seed images in the `images/` folder. One topic and image are selected at random for each post.
 
 The automation is designed to run on free tiers such as GitHub Actions.
@@ -36,7 +36,7 @@ The automation is designed to run on free tiers such as GitHub Actions.
    python src/twitter_bot/reply_mentions.py
    ```
 
-GitHub Actions workflows in `.github/workflows/` run the bots on a schedule. `social_media.yml` posts content daily and handles replies.
+GitHub Actions workflows in `.github/workflows/` run the bots on a schedule. `social_media.yml` runs every eight hours and posts content to each platform.
 
 ## Repository Layout
 
@@ -46,7 +46,7 @@ src/
   video_bot/generate_video.py     # AI‑generated vertical video
   instagram_bot/instagram_replies.py  # Meta API scaffold
   facebook_bot/reply_comments.py   # Facebook comment replies
-  post_scheduler.py               # Randomized multi-platform posting
+  post_scheduler.py               # Immediate multi-platform posting
   engagement_bot.py               # Follow/unfollow automation
   meme_generator.py               # Trending meme video creator
 ```
