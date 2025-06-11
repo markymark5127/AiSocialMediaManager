@@ -83,12 +83,15 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
 
 def post_tweet(text: str, image_path: str | None = None):
     media_id = None
-    if image_path:
+    if image_path and os.path.exists(image_path):
         try:
+            if os.path.getsize(image_path) == 0:
+                raise Exception("Image file is empty.")
             media = twitter_api.media_upload(image_path)
             media_id = media.media_id
         except Exception as exc:
             print("Failed to upload media:", exc)
+            image_path = None
     twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
 
 

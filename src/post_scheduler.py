@@ -197,9 +197,18 @@ def generate_ai_post(topic: str, style: str, platform: str) -> str:
 def post_to_twitter(message: str, image_path: str | None = None):
     if not twitter_authenticated():
         return
-    if image_path:
-        media = twitter_api.media_upload(image_path)
-        twitter_api.update_status(status=message, media_ids=[media.media_id])
+    media_id = None
+    if image_path and os.path.exists(image_path):
+        try:
+            if os.path.getsize(image_path) == 0:
+                raise Exception("Image file is empty.")
+            media = twitter_api.media_upload(image_path)
+            media_id = media.media_id
+        except Exception as exc:
+            print("Failed to upload media:", exc)
+            image_path = None
+    if media_id:
+        twitter_api.update_status(status=message, media_ids=[media_id])
     else:
         twitter_api.update_status(status=message)
     log("Posted to twitter")
