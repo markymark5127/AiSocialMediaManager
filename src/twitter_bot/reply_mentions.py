@@ -1,11 +1,9 @@
-import os
-import sys
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+import requests
 import tweepy
 import openai
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.append(ROOT_DIR)
-
 from src.utils import is_spam, generate_context_reply
 
 openai.api_key = os.getenv("OPENAI_API_KEY")

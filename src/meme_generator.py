@@ -1,5 +1,7 @@
 """Generate trending AI memes and convert them into short videos."""
-import os
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont

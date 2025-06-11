@@ -8,8 +8,10 @@
 # 1. GET /{ig-media-id}/comments
 # 2. POST /{comment-id}/replies
 
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import requests
-import os
 from src.utils import is_spam, generate_context_reply
 
 ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
