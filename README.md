@@ -24,10 +24,14 @@ The automation is designed to run on free tiers such as GitHub Actions.
 2. Set the following environment variables for the APIs you intend to use:
    - `OPENAI_API_KEY`
    - `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`
- - `META_ACCESS_TOKEN`, `IG_BUSINESS_ID` (optional for Instagram)
-3. Edit `topics.txt` with lines of text describing the content you want posted.
+   - `META_ACCESS_TOKEN`, `IG_BUSINESS_ID` (optional for Instagram)
+3. Run the auth test script to verify your Twitter credentials:
+   ```bash
+   python tests/test_auth.py
+   ```
+4. Edit `topics.txt` with lines of text describing the content you want posted.
    Add seed images to the `images/` directory to influence the generated art.
-4. Run the individual scripts from the `src` directory.  For example:
+5. Run the individual scripts from the `src` directory.  For example:
    ```bash
    python src/twitter_bot/reply_mentions.py
    ```
