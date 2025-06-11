@@ -89,4 +89,4 @@ if __name__ == "__main__":
     script_text = generate_script()
     save_text_as_audio(script_text)
     generate_video(script_text)
-    post_video_to_tiktok("output_reel.mp4", script_text)
+    # post_video_to_tiktok("output_reel.mp4", script_text)

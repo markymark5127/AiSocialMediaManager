@@ -236,21 +236,27 @@ def post_to_instagram(message: str, image_url: str | None = None):
     log("Posted to instagram")
 
 
-def post_to_tiktok(message: str):
-    if not tiktok_authenticated():
-        return
-    try:
-        from video_bot.generate_video import generate_script, save_text_as_audio, generate_video, get_random_background
-        from video_bot.tiktok_video_bot import post_video_to_tiktok
-    except Exception as exc:
-        print("TikTok modules not available:", exc)
-        return
-    script = generate_script()
-    save_text_as_audio(script)
-    bg = get_random_background()
-    generate_video(script, image_path=bg)
-    post_video_to_tiktok("output_reel.mp4", message)
-    log("Posted to tiktok")
+# def post_to_tiktok(message: str):
+#     """Generate a video and upload it to TikTok."""
+#     if not tiktok_authenticated():
+#         return
+#     try:
+#         from video_bot.generate_video import (
+#             generate_script,
+#             save_text_as_audio,
+#             generate_video,
+#             get_random_background,
+#         )
+#         from video_bot.tiktok_video_bot import post_video_to_tiktok
+#     except Exception as exc:
+#         print("TikTok modules not available:", exc)
+#         return
+#     script = generate_script()
+#     save_text_as_audio(script)
+#     bg = get_random_background()
+#     generate_video(script, image_path=bg)
+#     post_video_to_tiktok("output_reel.mp4", message)
+#     log("Posted to tiktok")
 
 
 def post_content(platform: str):
@@ -264,9 +270,9 @@ def post_content(platform: str):
         if platform == "instagram" and not instagram_authenticated():
             log("Skipped instagram due to auth failure")
             return
-        if platform == "tiktok" and not tiktok_authenticated():
-            log("Skipped tiktok due to auth failure")
-            return
+#        if platform == "tiktok" and not tiktok_authenticated():
+#            log("Skipped tiktok due to auth failure")
+#            return
         style = random.choice(["funny", "serious", "update"])
         topic = get_random_topic()
         content = generate_ai_post(topic, style, platform)
@@ -288,8 +294,8 @@ def post_content(platform: str):
             post_to_facebook(content, image_url=image_url)
         elif platform == "instagram":
             post_to_instagram(content, image_url=image_url)
-        elif platform == "tiktok":
-            post_to_tiktok(content)
+#        elif platform == "tiktok":
+#            post_to_tiktok(content)
         print(
             f"Posted on {platform} at {datetime.now().isoformat()} with style: {style} topic: {topic}"
         )
@@ -301,7 +307,7 @@ def post_content(platform: str):
 
 def post_to_all_platforms() -> None:
     """Immediately post content to all available platforms."""
-    platforms = ["twitter", "facebook", "instagram", "tiktok"]
+    platforms = ["twitter", "facebook", "instagram"]  # "tiktok" removed
     for platform in platforms:
         post_content(platform)
 
