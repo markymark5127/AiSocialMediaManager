@@ -290,8 +290,8 @@ def post_content(platform: str):
                 except Exception:
                     img_path = None
             post_to_twitter(content, img_path)
-        elif platform == "facebook":
-            post_to_facebook(content, image_url=image_url)
+        # elif platform == "facebook":
+        #     post_to_facebook(content, image_url=image_url)
         elif platform == "instagram":
             post_to_instagram(content, image_url=image_url)
 #        elif platform == "tiktok":
@@ -307,7 +307,7 @@ def post_content(platform: str):
 
 def post_to_all_platforms() -> None:
     """Immediately post content to all available platforms."""
-    platforms = ["twitter", "facebook", "instagram"]  # "tiktok" removed
+    platforms = ["twitter", "instagram"]  # "facebook" disabled, "tiktok" removed
     for platform in platforms:
         post_content(platform)
 
