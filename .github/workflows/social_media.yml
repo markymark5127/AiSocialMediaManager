@@ -36,5 +36,5 @@ jobs:
       #   run: python src/instagram_bot/instagram_replies.py
       - name: Run Facebook Reply Bot
         run: python src/facebook_bot/reply_comments.py
-      - name: Generate Video and Post to TikTok
-        run: python src/video_bot/tiktok_video_bot.py
+      # - name: Generate Video and Post to TikTok
+      #   run: python src/video_bot/tiktok_video_bot.py
