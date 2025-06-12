@@ -2,7 +2,7 @@ name: Daily Facebook Post
 
 on:
   schedule:
-    - cron: '0 13 * * *'
+  - cron: '0 16 * * *'
   workflow_dispatch:
 
 jobs:
