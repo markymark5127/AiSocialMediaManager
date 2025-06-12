@@ -71,7 +71,7 @@ def generate_image_from_tweet(tweet: str) -> str | None:
         print("🖼️ Requesting image generation based on tweet text...")
         res = client.images.generate(
             model="dall-e-3",
-            prompt=f"Create an engaging image to visually represent this tweet: \"{tweet}\". It should match the theme and include visual metaphor where appropriate. Avoid text in the image.",
+            prompt=f"Create an engaging image to visually represent this tweet: \"{tweet}\". It should match the theme and include visual metaphor where appropriate. If the tweet is funny make it a meme.",
             size="1024x1024",
             quality="standard",
             n=1
