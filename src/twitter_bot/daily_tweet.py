@@ -13,13 +13,27 @@ STYLE_STATE_FILE = os.getenv("STYLE_STATE_FILE", "tweet_style.txt")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-auth = tweepy.OAuth1UserHandler(
-    os.getenv("TWITTER_API_KEY"),
-    os.getenv("TWITTER_API_SECRET"),
-    os.getenv("TWITTER_ACCESS_TOKEN"),
-    os.getenv("TWITTER_ACCESS_SECRET"),
-)
-twitter_api = tweepy.API(auth)
+
+def _create_twitter_clients() -> tuple[tweepy.API, tweepy.Client]:
+    """Return API v1.1 and v2 clients using environment variables."""
+    auth = tweepy.OAuth1UserHandler(
+        os.getenv("TWITTER_API_KEY"),
+        os.getenv("TWITTER_API_SECRET"),
+        os.getenv("TWITTER_ACCESS_TOKEN"),
+        os.getenv("TWITTER_ACCESS_SECRET"),
+    )
+    api_v1 = tweepy.API(auth)
+    client_v2 = tweepy.Client(
+        bearer_token=os.getenv("TWITTER_BEARER_TOKEN"),
+        consumer_key=os.getenv("TWITTER_API_KEY"),
+        consumer_secret=os.getenv("TWITTER_API_SECRET"),
+        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
+        access_token_secret=os.getenv("TWITTER_ACCESS_SECRET"),
+    )
+    return api_v1, client_v2
+
+
+twitter_api, twitter_client = _create_twitter_clients()
 
 
 def _load_topics():
@@ -101,19 +115,16 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
 #    twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
 
 def post_tweet(text: str, image_path: str | None = None):
+    """Post a tweet using API v2 with optional media."""
     media_id = None
-    if image_path:
+    if image_path and os.path.exists(image_path):
         try:
             media = twitter_api.media_upload(image_path)
             media_id = media.media_id
-        except tweepy.errors.Unauthorized as exc:
-            print(f"Failed to upload media: {exc}")
-            print("Check your Twitter API credentials and ensure they have the required permissions.")
-            return  # Exit early if media upload fails
         except Exception as exc:
-            print(f"Unexpected error during media upload: {exc}")
+            print(f"Failed to upload media: {exc}")
     try:
-        twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+        twitter_client.create_tweet(text=text, media_ids=[media_id] if media_id else None)
     except tweepy.errors.TweepyException as exc:
         print(f"Failed to post tweet: {exc}")
 
@@ -121,22 +132,24 @@ def post_tweet(text: str, image_path: str | None = None):
 def main():
     style = _next_style()
     topic = _get_random_topic()
-    # seed_image = _get_random_image()
+    seed_image = _get_random_image()
     tweet = generate_tweet(topic, style)
-    # generated_url = generate_image(seed_image, topic)
+    generated_url = generate_image(seed_image, topic)
 
-    # download_path = None
-    # if generated_url and generated_url.startswith("http"):
-    #     try:
-    #         r = requests.get(generated_url)
-    #         download_path = os.path.join(IMAGE_DIR, "tweet_temp.jpg")
-    #         with open(download_path, "wb") as f:
-    #             f.write(r.content)
-    #     except Exception as exc:
-    #         print("Failed to download generated image:", exc)
-    #         download_path = None
+    download_path = None
+    if generated_url and generated_url.startswith("http"):
+        try:
+            r = requests.get(generated_url)
+            download_path = os.path.join(IMAGE_DIR, "tweet_temp.jpg")
+            with open(download_path, "wb") as f:
+                f.write(r.content)
+        except Exception as exc:
+            print("Failed to download generated image:", exc)
+            download_path = None
 
-    post_tweet(tweet)
+    post_tweet(tweet, download_path)
+    if download_path and os.path.exists(download_path):
+        os.remove(download_path)
     print(f"[{datetime.now().isoformat()}] Tweeted with style {style} about '{topic}'")
 
 
