@@ -7,33 +7,22 @@ import requests
 import tweepy
 from openai import OpenAI
 
+# Environment-based config
 TOPIC_FILE = os.getenv("TOPIC_FILE", "topics.txt")
 IMAGE_DIR = os.getenv("IMAGE_DIR", "images")
 STYLE_STATE_FILE = os.getenv("STYLE_STATE_FILE", "tweet_style.txt")
 
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-
-def _create_twitter_clients() -> tuple[tweepy.API, tweepy.Client]:
-    """Return API v1.1 and v2 clients using environment variables."""
-    auth = tweepy.OAuth1UserHandler(
-        os.getenv("TWITTER_API_KEY"),
-        os.getenv("TWITTER_API_SECRET"),
-        os.getenv("TWITTER_ACCESS_TOKEN"),
-        os.getenv("TWITTER_ACCESS_SECRET"),
-    )
-    api_v1 = tweepy.API(auth)
-    client_v2 = tweepy.Client(
-        bearer_token=os.getenv("TWITTER_BEARER_TOKEN"),
-        consumer_key=os.getenv("TWITTER_API_KEY"),
-        consumer_secret=os.getenv("TWITTER_API_SECRET"),
-        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
-        access_token_secret=os.getenv("TWITTER_ACCESS_SECRET"),
-    )
-    return api_v1, client_v2
-
-
-twitter_api, twitter_client = _create_twitter_clients()
+# Initialize Twitter v1.1 client (OAuth 1.0a)
+auth = tweepy.OAuth1UserHandler(
+    os.getenv("TWITTER_API_KEY"),
+    os.getenv("TWITTER_API_SECRET"),
+    os.getenv("TWITTER_ACCESS_TOKEN"),
+    os.getenv("TWITTER_ACCESS_SECRET"),
+)
+twitter_api = tweepy.API(auth)
 
 
 def _load_topics():
@@ -57,15 +46,9 @@ def _get_random_image():
 
 
 def _next_style() -> str:
-    """Alternate between 'funny' and 'serious' styles."""
-    last = None
-    if os.path.exists(STYLE_STATE_FILE):
-        with open(STYLE_STATE_FILE, "r") as f:
-            last = f.read().strip()
-    style = "serious" if last == "funny" else "funny"
-    with open(STYLE_STATE_FILE, "w") as f:
-        f.write(style)
-    return style
+    """Randomly choose between 'funny' and 'serious' styles."""
+    return random.choice(["funny", "serious"])
+
 
 
 def generate_tweet(topic: str, style: str) -> str:
@@ -95,38 +78,25 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
         return None
 
 
-#def post_tweet(text: str, image_path: str | None = None):
-#    """Post a tweet optionally with an image.
-
-#    Ensures the media exists and isn't zero bytes before uploading.
-#    """
-#    media_id = None
-#    if image_path and os.path.exists(image_path):
-#        try:
-            # Ensure file is not zero bytes
-#            if os.path.getsize(image_path) == 0:
-#                raise Exception("Image file is empty.")
-
-#            media = twitter_api.media_upload(image_path)
-#            media_id = media.media_id
-#        except Exception as exc:
-#            print("Failed to upload media:", exc)
-#            image_path = None  # Don't pass invalid media
-#    twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
-
 def post_tweet(text: str, image_path: str | None = None):
-    """Post a tweet using API v2 with optional media."""
+    """Post a tweet with optional image using v1.1 API (free-tier safe)."""
     media_id = None
     if image_path and os.path.exists(image_path):
         try:
+            if os.path.getsize(image_path) == 0:
+                raise Exception("Image file is empty.")
+            print(f"📤 Uploading image: {image_path}")
             media = twitter_api.media_upload(image_path)
             media_id = media.media_id
         except Exception as exc:
-            print(f"Failed to upload media: {exc}")
+            print(f"❌ Failed to upload media: {exc}")
+            media_id = None  # fallback to text-only tweet
+
     try:
-        twitter_client.create_tweet(text=text, media_ids=[media_id] if media_id else None)
-    except tweepy.errors.TweepyException as exc:
-        print(f"Failed to post tweet: {exc}")
+        twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+        print("✅ Tweet posted successfully!")
+    except tweepy.TweepyException as exc:
+        print(f"❌ Failed to post tweet: {exc}")
 
 
 def main():
@@ -148,8 +118,11 @@ def main():
             download_path = None
 
     post_tweet(tweet, download_path)
+
+    # Cleanup temp image
     if download_path and os.path.exists(download_path):
         os.remove(download_path)
+
     print(f"[{datetime.now().isoformat()}] Tweeted with style {style} about '{topic}'")
 
 
