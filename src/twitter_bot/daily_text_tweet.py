@@ -11,18 +11,36 @@ STYLE_STATE_FILE = os.getenv("STYLE_STATE_FILE", "tweet_style.txt")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-# Use OAuth 2.0 with Tweepy Client for posting tweets
-TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
-TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
-TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
-TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET")
+"""Utility for generating and posting a single text tweet each day.
 
-twitter_client = tweepy.Client(
-    consumer_key=TWITTER_API_KEY,
-    consumer_secret=TWITTER_API_SECRET,
-    access_token=TWITTER_ACCESS_TOKEN,
-    access_token_secret=TWITTER_ACCESS_SECRET,
+The core authentication mirrors the following minimal Tweepy example:
+
+```python
+import tweepy
+
+client = tweepy.Client(
+    consumer_key="<API key>",
+    consumer_secret="<API secret>",
+    access_token="<access token>",
+    access_token_secret="<access secret>"
 )
+
+client.create_tweet(text="Hello World")
+```
+
+Credentials are loaded from environment variables so the script can run in an
+automated workflow without hard coded secrets.
+"""
+
+
+def _create_twitter_client() -> tweepy.Client:
+    """Return an authenticated Tweepy Client using env vars."""
+    return tweepy.Client(
+        consumer_key=os.getenv("TWITTER_API_KEY"),
+        consumer_secret=os.getenv("TWITTER_API_SECRET"),
+        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
+        access_token_secret=os.getenv("TWITTER_ACCESS_SECRET"),
+    )
 
 
 def _load_topics():
@@ -63,8 +81,9 @@ def generate_tweet(topic: str, style: str) -> str:
 
 def post_tweet(text: str):
     """Post a text-only tweet using the v2 API."""
+    client = _create_twitter_client()
     try:
-        twitter_client.create_tweet(text=text)
+        client.create_tweet(text=text)
     except tweepy.errors.TweepyException as exc:
         print(f"Failed to post tweet: {exc}")
 
