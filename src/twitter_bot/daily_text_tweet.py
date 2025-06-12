@@ -10,13 +10,19 @@ STYLE_STATE_FILE = os.getenv("STYLE_STATE_FILE", "tweet_style.txt")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-auth = tweepy.OAuth1UserHandler(
-    os.getenv("TWITTER_API_KEY"),
-    os.getenv("TWITTER_API_SECRET"),
-    os.getenv("TWITTER_ACCESS_TOKEN"),
-    os.getenv("TWITTER_ACCESS_SECRET"),
+
+# Use OAuth 2.0 with Tweepy Client for posting tweets
+TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
+TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
+TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET")
+
+twitter_client = tweepy.Client(
+    consumer_key=TWITTER_API_KEY,
+    consumer_secret=TWITTER_API_SECRET,
+    access_token=TWITTER_ACCESS_TOKEN,
+    access_token_secret=TWITTER_ACCESS_SECRET,
 )
-twitter_api = tweepy.API(auth)
 
 
 def _load_topics():
@@ -56,8 +62,9 @@ def generate_tweet(topic: str, style: str) -> str:
 
 
 def post_tweet(text: str):
+    """Post a text-only tweet using the v2 API."""
     try:
-        twitter_api.update_status(status=text)
+        twitter_client.create_tweet(text=text)
     except tweepy.errors.TweepyException as exc:
         print(f"Failed to post tweet: {exc}")
 
