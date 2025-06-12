@@ -14,6 +14,7 @@ This repository contains a lightweight collection of scripts that automate basic
 * **Topic & Image Sources** – place text prompts in `topics.txt` and seed images in the `images/` folder. One topic and image are selected at random for each post.
 * **Daily Twitter Bot** – once a day generates a tweet with hashtags and an AI image using a random topic and seed picture.
 * **Text‑Only Tweet Bot** – variant that posts a short tweet with relevant hashtags but no image.
+* **Daily Facebook Bot** – once a day posts an AI-generated Facebook update with an optional image.
 
 The automation is designed to run on free tiers such as GitHub Actions.
 
@@ -54,6 +55,7 @@ src/
   engagement_bot.py               # Follow/unfollow automation
   meme_generator.py               # Trending meme video creator
   twitter_bot/daily_tweet.py      # Posts one AI-generated tweet per day
+  facebook_bot/daily_facebook_post.py # Posts one AI-generated Facebook update per day
   twitter_bot/daily_text_tweet.py # Text-only version of the daily tweet bot
   twitter_bot/example_daily_tweet.py # Sample dual API image tweet script
 ```
