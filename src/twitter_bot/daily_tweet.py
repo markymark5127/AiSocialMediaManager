@@ -16,7 +16,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Twitter API clients (v1.1 for media upload, v2 for tweet post)
+# Twitter API clients
 twitter_api_v1 = tweepy.API(tweepy.OAuth1UserHandler(
     os.getenv("TWITTER_API_KEY"),
     os.getenv("TWITTER_API_SECRET"),
@@ -53,17 +53,14 @@ def _get_random_image():
 
 
 def _next_style() -> str:
-    """Randomly choose between 'funny' and 'serious' styles."""
     return random.choice(["funny", "serious"])
 
 
 def generate_tweet(topic: str, style: str, retries: int = 3, delay: float = 2.0) -> str:
-    """Generate a tweet using GPT with retry and validation."""
     prompt = (
         f"Write a {style} tweet about {topic}. "
         "Include a couple relevant hashtags at the end."
     )
-
     for attempt in range(1, retries + 1):
         try:
             res = client.chat.completions.create(
@@ -81,15 +78,13 @@ def generate_tweet(topic: str, style: str, retries: int = 3, delay: float = 2.0)
             if attempt < retries:
                 time.sleep(delay)
             else:
-                raise RuntimeError("Failed to generate tweet after retries.")
+                raise RuntimeError("❌ Failed to generate tweet after retries.")
 
 
 def generate_image(seed_image: str | None, topic: str) -> str | None:
-    """Generate image variation using OpenAI."""
     if not seed_image or not os.path.exists(seed_image):
         print("⚠️ No valid seed image.")
         return None
-
     try:
         response = client.images.create_variation(
             image=Path(seed_image),
@@ -105,11 +100,9 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
 
 
 def download_image_safely(url: str, output_path: str) -> str | None:
-    """Download image from URL with validation."""
     if not url or not url.startswith("http"):
         print("⚠️ Invalid image URL.")
         return None
-
     try:
         r = requests.get(url)
         if r.status_code == 200:
@@ -127,14 +120,14 @@ def download_image_safely(url: str, output_path: str) -> str | None:
 
 
 def post_tweet(text: str, image_path: str | None = None):
-    """Uploads media via v1.1, posts tweet via v2 (free-tier safe)."""
+    """Uploads media via v1.1, posts tweet via v2 (Free Tier safe)."""
     media_ids = []
 
     if image_path and os.path.exists(image_path):
         try:
             if os.path.getsize(image_path) == 0:
                 raise Exception("Image is empty.")
-            print(f"📤 Uploading image: {image_path}")
+            print(f"📤 Uploading image via v1.1: {image_path}")
             media = twitter_api_v1.media_upload(image_path)
             media_ids = [media.media_id]
         except Exception as exc:
@@ -142,6 +135,7 @@ def post_tweet(text: str, image_path: str | None = None):
             media_ids = []
 
     try:
+        print(f"📢 Posting tweet via v2 with media_ids: {media_ids}")
         twitter_client_v2.create_tweet(
             text=text,
             media={"media_ids": media_ids} if media_ids else None
@@ -162,7 +156,6 @@ def main():
 
     post_tweet(tweet, download_path)
 
-    # Clean up temp image
     if download_path and os.path.exists(download_path):
         os.remove(download_path)
 
