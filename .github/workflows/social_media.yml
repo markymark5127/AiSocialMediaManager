@@ -1,9 +1,6 @@
 name: Social Media Automation
 
 on:
-  schedule:
-    # Run every 8 hours (3 times a day)
-    - cron: '0 */8 * * *'
   workflow_dispatch:
 
 jobs:
