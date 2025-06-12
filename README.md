@@ -13,6 +13,7 @@ This repository contains a lightweight collection of scripts that automate basic
 * **Multi‑Platform Scheduler** – generates AI posts for Twitter, Facebook, Instagram, and TikTok when triggered.
 * **Topic & Image Sources** – place text prompts in `topics.txt` and seed images in the `images/` folder. One topic and image are selected at random for each post.
 * **Daily Twitter Bot** – once a day generates a tweet with hashtags and an AI image using a random topic and seed picture.
+* **Text‑Only Tweet Bot** – variant that posts a short tweet with relevant hashtags but no image.
 
 The automation is designed to run on free tiers such as GitHub Actions.
 
@@ -51,6 +52,7 @@ src/
   engagement_bot.py               # Follow/unfollow automation
   meme_generator.py               # Trending meme video creator
   twitter_bot/daily_tweet.py      # Posts one AI-generated tweet per day
+  twitter_bot/daily_text_tweet.py # Text-only version of the daily tweet bot
 ```
 
 The repository retains the MIT license.
