@@ -53,7 +53,7 @@ def generate_image_from_post(post: str) -> str | None:
             model="dall-e-3",
             prompt=(
                 f"Create an engaging image to visually represent this Facebook post: \"{post}\". "
-                "It should match the theme and avoid text in the image."
+                "It should match the theme if the post is funny make the image a meme."
             ),
             size="1024x1024",
             quality="standard",
