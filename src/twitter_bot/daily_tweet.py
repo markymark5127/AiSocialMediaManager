@@ -81,24 +81,41 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
         return None
 
 
-def post_tweet(text: str, image_path: str | None = None):
-    """Post a tweet optionally with an image.
+#def post_tweet(text: str, image_path: str | None = None):
+#    """Post a tweet optionally with an image.
 
-    Ensures the media exists and isn't zero bytes before uploading.
-    """
-    media_id = None
-    if image_path and os.path.exists(image_path):
-        try:
+#    Ensures the media exists and isn't zero bytes before uploading.
+#    """
+#    media_id = None
+#    if image_path and os.path.exists(image_path):
+#        try:
             # Ensure file is not zero bytes
-            if os.path.getsize(image_path) == 0:
-                raise Exception("Image file is empty.")
+#            if os.path.getsize(image_path) == 0:
+#                raise Exception("Image file is empty.")
 
+#            media = twitter_api.media_upload(image_path)
+#            media_id = media.media_id
+#        except Exception as exc:
+#            print("Failed to upload media:", exc)
+#            image_path = None  # Don't pass invalid media
+#    twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+
+def post_tweet(text: str, image_path: str | None = None):
+    media_id = None
+    if image_path:
+        try:
             media = twitter_api.media_upload(image_path)
             media_id = media.media_id
+        except tweepy.errors.Unauthorized as exc:
+            print(f"Failed to upload media: {exc}")
+            print("Check your Twitter API credentials and ensure they have the required permissions.")
+            return  # Exit early if media upload fails
         except Exception as exc:
-            print("Failed to upload media:", exc)
-            image_path = None  # Don't pass invalid media
-    twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+            print(f"Unexpected error during media upload: {exc}")
+    try:
+        twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+    except tweepy.errors.TweepyException as exc:
+        print(f"Failed to post tweet: {exc}")
 
 
 def main():
