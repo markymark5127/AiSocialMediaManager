@@ -138,11 +138,12 @@ def post_tweet(text: str, image_path: str | None = None):
         print(f"📢 Posting tweet via v2 with media_ids: {media_ids}")
         twitter_client_v2.create_tweet(
             text=text,
-            media={"media_ids": media_ids} if media_ids else None
+            media_ids=media_ids if media_ids else None
         )
         print("✅ Tweet posted successfully!")
     except tweepy.TweepyException as exc:
         print(f"❌ Failed to post tweet: {exc}")
+
 
 
 def main():
