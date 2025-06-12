@@ -79,25 +79,45 @@ def generate_image(seed_image: str | None, topic: str) -> str | None:
 
 
 def post_tweet(text: str, image_path: str | None = None):
-    """Post a tweet with optional image using v1.1 API (free-tier safe)."""
-    media_id = None
+    """Uploads media via v1.1, posts tweet via v2 (required on free tier)."""
+    # Set up both clients
+    api_v1 = tweepy.API(
+        tweepy.OAuth1UserHandler(
+            os.getenv("TWITTER_API_KEY"),
+            os.getenv("TWITTER_API_SECRET"),
+            os.getenv("TWITTER_ACCESS_TOKEN"),
+            os.getenv("TWITTER_ACCESS_SECRET"),
+        )
+    )
+
+    client_v2 = tweepy.Client(
+        consumer_key=os.getenv("TWITTER_API_KEY"),
+        consumer_secret=os.getenv("TWITTER_API_SECRET"),
+        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
+        access_token_secret=os.getenv("TWITTER_ACCESS_SECRET"),
+    )
+
+    media_ids = []
     if image_path and os.path.exists(image_path):
         try:
             if os.path.getsize(image_path) == 0:
                 raise Exception("Image file is empty.")
-            print(f"📤 Uploading image: {image_path}")
-            media = twitter_api.media_upload(image_path)
-            media_id = media.media_id
+            print(f"📤 Uploading image via v1.1: {image_path}")
+            media = api_v1.media_upload(image_path)
+            media_ids = [media.media_id]
         except Exception as exc:
             print(f"❌ Failed to upload media: {exc}")
-            media_id = None  # fallback to text-only
+            media_ids = []
 
     try:
-        twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
+        print("📢 Posting tweet via v2...")
+        client_v2.create_tweet(
+            text=text,
+            media={"media_ids": media_ids} if media_ids else None
+        )
         print("✅ Tweet posted successfully!")
     except tweepy.TweepyException as exc:
         print(f"❌ Failed to post tweet: {exc}")
-
 
 
 def main():
