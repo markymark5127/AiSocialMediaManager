@@ -25,7 +25,9 @@ The automation is designed to run on free tiers such as GitHub Actions.
    ```
 2. Set the following environment variables for the APIs you intend to use:
    - `OPENAI_API_KEY`
-   - `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`
+   - `TWITTER_API_KEY` / `TWITTER_CONSUMER_KEY`
+   - `TWITTER_API_SECRET` / `TWITTER_CONSUMER_SECRET`
+   - `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`, `TWITTER_BEARER_TOKEN`
    - `META_ACCESS_TOKEN`, `IG_BUSINESS_ID` (optional for Instagram)
 3. Run the auth test script to verify your Twitter credentials:
    ```bash
@@ -53,6 +55,7 @@ src/
   meme_generator.py               # Trending meme video creator
   twitter_bot/daily_tweet.py      # Posts one AI-generated tweet per day
   twitter_bot/daily_text_tweet.py # Text-only version of the daily tweet bot
+  twitter_bot/example_daily_tweet.py # Sample dual API image tweet script
 ```
 
 The repository retains the MIT license.
