@@ -89,17 +89,24 @@ def post_to_facebook(text: str, image_path: str | None = None):
         return
 
     if image_path and os.path.exists(image_path):
-        url = f"https://graph.facebook.com/v17.0/{page_id}/photos"
+        url = f"https://graph.facebook.com/v23.0/{page_id}/photos"
+        print(f"📤 Posting image to Facebook: {image_path}")
         with open(image_path, "rb") as img:
-            requests.post(
+            res = requests.post(
                 url,
                 data={"caption": text, "access_token": token},
                 files={"source": img},
             )
     else:
-        url = f"https://graph.facebook.com/v17.0/{page_id}/feed"
-        requests.post(url, data={"message": text, "access_token": token})
-    print("✅ Post sent to Facebook")
+        url = f"https://graph.facebook.com/v23.0/{page_id}/feed"
+        print("📝 Posting text-only update to Facebook...")
+        res = requests.post(url, data={"message": text, "access_token": token})
+
+    if res.status_code == 200:
+        print("✅ Post sent to Facebook")
+    else:
+        print(f"❌ Facebook post failed: {res.status_code} - {res.text}")
+
 
 
 def main():
