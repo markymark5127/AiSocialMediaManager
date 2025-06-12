@@ -90,13 +90,14 @@ def post_tweet(text: str, image_path: str | None = None):
             media_id = media.media_id
         except Exception as exc:
             print(f"❌ Failed to upload media: {exc}")
-            media_id = None  # fallback to text-only tweet
+            media_id = None  # fallback to text-only
 
     try:
         twitter_api.update_status(status=text, media_ids=[media_id] if media_id else None)
         print("✅ Tweet posted successfully!")
     except tweepy.TweepyException as exc:
         print(f"❌ Failed to post tweet: {exc}")
+
 
 
 def main():
